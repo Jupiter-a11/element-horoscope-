@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星のエレメント診断</title>
+<style>
+  :root{
+    --ink:#0E1022;
+    --night:#14172B;
+    --night2:#1B1F3B;
+    --ivory:#EDE8DC;
+    --ivory-dim:#B9B6AE;
+    --gold:#C9A15C;
+    --gold-dim:#8A7346;
+    --fire:#C4562E;
+    --earth:#6B7A4F;
+    --air:#8FA6C4;
+    --water:#35708A;
+    --line:rgba(237,232,220,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(201,161,92,0.10), transparent 45%),
+      radial-gradient(ellipse at 90% 10%, rgba(53,112,138,0.12), transparent 40%),
+      var(--ink);
+    color:var(--ivory);
+    font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+    line-height:1.7;
+    min-height:100vh;
+    padding:0 0 80px;
+  }
+  .wrap{max-width:620px;margin:0 auto;padding:36px 20px 0;}
+  header.hero{text-align:left;margin-bottom:34px;}
+  .eyebrow-line{
+    display:flex;align-items:center;gap:10px;color:var(--gold-dim);
+    font-size:12.5px;letter-spacing:0.04em;margin-bottom:10px;
+  }
+  .eyebrow-line svg{flex:none;}
+  h1{
+    font-family:Georgia,"Iowan Old Style","Hiragino Mincho ProN",serif;
+    font-weight:400;
+    font-size:clamp(28px,7vw,36px);
+    margin:0 0 10px;
+    color:var(--ivory);
+    letter-spacing:0.01em;
+  }
+  .lead{color:var(--ivory-dim);font-size:14.5px;max-width:46ch;margin:0;}
+
+  .card{
+    background:linear-gradient(180deg,var(--night2),var(--night));
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:26px 22px;
+    margin-bottom:20px;
+  }
+  .field{margin-bottom:20px;}
+  .field:last-child{margin-bottom:0;}
+  .field label.field-title{
+    display:block;font-size:13.5px;color:var(--gold);margin-bottom:9px;
+    font-family:Georgia,"Hiragino Mincho ProN",serif;
+  }
+  .field .hint{font-size:12px;color:var(--ivory-dim);margin-top:6px;}
+
+  input[type="date"],input[type="time"],input[type="number"],select{
+    width:100%;background:var(--ink);border:1px solid var(--line);
+    color:var(--ivory);padding:11px 12px;border-radius:3px;
+    font-size:15px;font-family:inherit;
+    -webkit-appearance:none;appearance:none;
+  }
+  select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0L5 6L10 0Z' fill='%23C9A15C'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+  input:focus,select:focus{outline:2px solid var(--gold-dim);outline-offset:1px;}
+
+  .choice-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .choice{
+    flex:1 1 auto;min-width:90px;text-align:center;
+    border:1px solid var(--line);background:var(--ink);
+    color:var(--ivory-dim);padding:10px 8px;border-radius:3px;
+    font-size:13.5px;cursor:pointer;user-select:none;transition:border-color .15s,color .15s,background .15s;
+  }
+  .choice input{display:none;}
+  .choice.active{border-color:var(--gold);color:var(--ivory);background:rgba(201,161,92,0.10);}
+
+  .sub-panel{margin-top:12px;display:none;}
+  .sub-panel.show{display:block;}
+  .latlon-row{display:flex;gap:10px;}
+  .latlon-row > div{flex:1;}
+  .latlon-row label.mini{display:block;font-size:11.5px;color:var(--ivory-dim);margin-bottom:5px;}
+
+  button.run{
+    width:100%;padding:14px;margin-top:6px;
+    background:var(--gold);color:var(--ink);border:none;border-radius:3px;
+    font-size:15px;font-weight:600;letter-spacing:0.02em;cursor:pointer;
+    font-family:"Hiragino Sans","Noto Sans JP",sans-serif;
+  }
+  button.run:active{background:var(--gold-dim);}
+
+  #result{display:none;}
+  .result-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;}
+  .result-head h2{
+    font-family:Georgia,"Hiragino Mincho ProN",serif;font-weight:400;
+    font-size:20px;margin:0;color:var(--ivory);
+  }
+  .result-head span{font-size:12px;color:var(--ivory-dim);}
+
+  .donut-row{display:flex;align-items:center;gap:22px;margin-bottom:22px;}
+  .legend{flex:1;display:flex;flex-direction:column;gap:8px;}
+  .legend-item{display:flex;align-items:center;gap:9px;font-size:13.5px;}
+  .legend-swatch{width:11px;height:11px;border-radius:2px;flex:none;}
+  .legend-name{color:var(--ivory-dim);min-width:34px;}
+  .legend-count{margin-left:auto;color:var(--ivory);font-variant-numeric:tabular-nums;}
+
+  .verdict{
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    padding:16px 0;margin-bottom:20px;font-size:14.5px;color:var(--ivory);
+  }
+  .verdict b{color:var(--gold);font-weight:600;}
+
+  table.bodies{width:100%;border-collapse:collapse;font-size:14px;}
+  table.bodies th{
+    text-align:left;font-weight:400;color:var(--ivory-dim);font-size:12px;
+    border-bottom:1px solid var(--line);padding:6px 4px 10px;
+  }
+  table.bodies td{padding:9px 4px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  table.bodies tr:last-child td{border-bottom:none;}
+  table.bodies tr.big3 td{color:var(--ivory);}
+  .body-name{color:var(--ivory);display:flex;align-items:center;gap:6px;}
+  .weight-badge{
+    display:inline-block;font-size:10px;color:var(--gold);border:1px solid var(--gold-dim);
+    border-radius:8px;padding:1px 6px;line-height:1.4;
+  }
+  .sign-tag{color:var(--ivory-dim);}
+  .elem-badge{
+    display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;
+    border-radius:50%;font-size:11.5px;color:var(--ink);font-weight:700;
+  }
+  .deg{color:var(--ivory-dim);font-size:12px;font-variant-numeric:tabular-nums;}
+
+  .warn{
+    font-size:13px;color:var(--gold);background:rgba(201,161,92,0.08);
+    border:1px solid rgba(201,161,92,0.3);border-radius:3px;padding:12px 14px;margin-bottom:18px;
+  }
+  .note{font-size:12px;color:var(--ivory-dim);margin-top:22px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow-line">
+      <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0L8.6 5.4L14 7L8.6 8.6L7 14L5.4 8.6L0 7L5.4 5.4Z" fill="#C9A15C"/></svg>
+      西洋占星術 ・ 出生図エレメント診断
+    </div>
+    <h1>星のエレメント診断</h1>
+    <p class="lead">生年月日と出生時刻・場所から、太陽・月・ASC（上昇宮）を含む天体の星座を計算し、火・地・風・水の4元素のバランスを診断します。太陽・月・ASCは重要度が高いため2点、その他の天体は1点で計算します。</p>
+  </header>
+
+  <div class="card">
+    <div class="field">
+      <label class="field-title">生年月日</label>
+      <input type="date" id="bdate" min="1900-01-01" max="2099-12-31">
+    </div>
+
+    <div class="field">
+      <label class="field-title">出生時刻</label>
+      <div class="choice-row" id="timeChoice">
+        <label class="choice active"><input type="radio" name="timeMode" value="known" checked>時刻がわかる</label>
+        <label class="choice"><input type="radio" name="timeMode" value="unknown">わからない</label>
+      </div>
+      <div class="sub-panel show" id="timeKnownPanel">
+        <input type="time" id="btime" value="12:00">
+      </div>
+      <div class="hint">出生時刻が不明の場合、月の星座がその日のうちに変わる可能性があり、ASC（上昇宮）は計算できません。</div>
+    </div>
+
+    <div class="field">
+      <label class="field-title">出生地</label>
+      <div class="choice-row" id="placeChoice">
+        <label class="choice active"><input type="radio" name="placeMode" value="jp" checked>日本国内</label>
+        <label class="choice"><input type="radio" name="placeMode" value="overseas">海外</label>
+        <label class="choice"><input type="radio" name="placeMode" value="unknown">わからない</label>
+      </div>
+
+      <div class="sub-panel show" id="jpPanel">
+        <select id="prefSelect"></select>
+        <div class="hint">都道府県庁所在地の座標でASC（上昇宮）を計算します（目安値）。タイムゾーンは日本標準時（UTC+9）です。</div>
+      </div>
+
+      <div class="sub-panel" id="overseasPanel">
+        <select id="utcOffset"></select>
+        <div class="latlon-row" style="margin-top:10px;">
+          <div>
+            <label class="mini">緯度（北緯+ / 南緯−）</label>
+            <input type="number" id="latInput" step="0.01" placeholder="例: 40.71">
+          </div>
+          <div>
+            <label class="mini">経度（東経+ / 西経−）</label>
+            <input type="number" id="lonInput" step="0.01" placeholder="例: -74.01">
+          </div>
+        </div>
+        <div class="hint">タイムゾーンと、ASC計算用の緯度・経度を入力してください。緯度・経度が未入力の場合、ASCは計算できません。</div>
+      </div>
+
+      <div class="hint" id="placeHint" style="display:none;">出生地が不明のため、日本標準時（UTC+9）を仮定して計算します。ASC（上昇宮）は座標が必要なため計算できません。</div>
+    </div>
+
+    <button class="run" id="runBtn">診断する</button>
+  </div>
+
+  <div class="card" id="result">
+    <div id="warnBox"></div>
+
+    <div class="result-head">
+      <h2>4元素のバランス</h2>
+      <span id="calcMeta"></span>
+    </div>
+
+    <div class="donut-row">
+      <svg width="128" height="128" viewBox="0 0 128 128" id="donut"></svg>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="verdict" id="verdict"></div>
+
+    <table class="bodies">
+      <thead><tr><th>天体</th><th>星座</th><th>度数</th><th style="text-align:right;">元素</th></tr></thead>
+      <tbody id="bodyTable"></tbody>
+    </table>
+
+    <p class="note">計算は簡易天文暦アルゴリズムによる概算（誤差はおおむね数分〜1度程度）です。ASC（上昇宮）は出生時刻に非常に敏感なため、時刻の誤差が数分あるだけでも星座が変わることがあります。</p>
+  </div>
+
+</div>
+
+<script>
+/* ---------- trig helpers (degrees) ---------- */
+const sind=d=>Math.sin(d*Math.PI/180);
+const cosd=d=>Math.cos(d*Math.PI/180);
+const tand=d=>Math.tan(d*Math.PI/180);
+const atan2d=(y,x)=>Math.atan2(y,x)*180/Math.PI;
+const rev=x=>{let r=x%360; if(r<0) r+=360; return r;};
+
+function eccAnom(Mdeg,e){
+  const M=Mdeg*Math.PI/180;
+  let E=M+e*Math.sin(M)*(1+e*Math.cos(M));
+  for(let n=0;n<12;n++){
+    const dE=(E - e*Math.sin(E) - M)/(1 - e*Math.cos(E));
+    E-=dE;
+    if(Math.abs(dE)<1e-10) break;
+  }
+  return E*180/Math.PI;
+}
+
+/* ---------- orbital elements (epoch: d = days since 2000-01-00.0 UT) ---------- */
+const ELEM={
+  sun:    {N0:0,        Nd:0,           i0:0,       id:0,           w0:282.9404, wd:4.70935e-5,  a0:1,         ad:0,        e0:0.016709,  ed:-1.151e-9, M0:356.0470, Md:0.9856002585},
+  moon:   {N0:125.1228, Nd:-0.0529538083,i0:5.1454, id:0,           w0:318.0634, wd:0.1643573223,a0:60.2666,   ad:0,        e0:0.054900,  ed:0,         M0:115.3654, Md:13.0649929509},
+  mercury:{N0:48.3313,  Nd:3.24587e-5,  i0:7.0047,  id:5.00e-8,     w0:29.1241,  wd:1.01444e-5,  a0:0.387098,  ad:0,        e0:0.205635,  ed:5.59e-10,  M0:168.6562, Md:4.0923344368},
+  venus:  {N0:76.6799,  Nd:2.46590e-5,  i0:3.3946,  id:2.75e-8,     w0:54.8910,  wd:1.38374e-5,  a0:0.723330,  ad:0,        e0:0.006773,  ed:-1.302e-9, M0:48.0052,  Md:1.6021302244},
+  mars:   {N0:49.5574,  Nd:2.11081e-5,  i0:1.8497,  id:-1.78e-8,    w0:286.5016, wd:2.92961e-5,  a0:1.523688,  ad:0,        e0:0.093405,  ed:2.516e-9,  M0:18.6021,  Md:0.5240207766},
+  jupiter:{N0:100.4542, Nd:2.76854e-5,  i0:1.3030,  id:-1.557e-7,   w0:273.8777, wd:1.64505e-5,  a0:5.20256,   ad:0,        e0:0.048498,  ed:4.469e-9,  M0:19.8950,  Md:0.0830853001},
+  saturn: {N0:113.6634, Nd:2.38980e-5,  i0:2.4886,  id:-1.081e-7,   w0:339.3939, wd:2.97661e-5,  a0:9.55475,   ad:0,        e0:0.055546,  ed:-9.499e-9, M0:316.9670, Md:0.0334442282},
+  uranus: {N0:74.0005,  Nd:1.3978e-5,   i0:0.7733,  id:1.9e-8,      w0:96.6612,  wd:3.0565e-5,   a0:19.18171,  ad:-1.55e-8, e0:0.047318,  ed:7.45e-9,   M0:142.5905, Md:0.011725806},
+  neptune:{N0:131.7806, Nd:3.0173e-5,   i0:1.7700,  id:-2.55e-7,    w0:272.8461, wd:-6.027e-6,   a0:30.05826,  ad:3.313e-8, e0:0.008606,  ed:2.15e-9,   M0:260.2471, Md:0.005995147},
+  pluto:  {N0:110.30347,Nd:0,           i0:17.14175,id:0,           w0:113.76329,wd:0,           a0:39.48168677,ad:0,      e0:0.24880766,ed:0,         M0:14.86205, Md:0.0039760347}
+};
+
+function solve(elem,d){
+  const N=rev(elem.N0+elem.Nd*d);
+  const i=elem.i0+elem.id*d;
+  const w=rev(elem.w0+elem.wd*d);
+  const a=elem.a0+(elem.ad||0)*d;
+  const e=elem.e0+(elem.ed||0)*d;
+  const M=rev(elem.M0+elem.Md*d);
+  const E=eccAnom(M,e);
+  const xv=a*(cosd(E)-e);
+  const yv=a*(Math.sqrt(1-e*e)*sind(E));
+  const v=rev(atan2d(yv,xv));
+  const r=Math.sqrt(xv*xv+yv*yv);
+  const xh=r*(cosd(N)*cosd(v+w)-sind(N)*sind(v+w)*cosd(i));
+  const yh=r*(sind(N)*cosd(v+w)+cosd(N)*sind(v+w)*cosd(i));
+  const zh=r*(sind(v+w)*sind(i));
+  return {xh,yh,zh,N,i,w,M};
+}
+
+function toJulian(dt){
+  // dt: {y,m,d,hour} in UT, hour as decimal
+  let y=dt.y, m=dt.m;
+  const day=dt.d, hour=dt.hour;
+  if(m<=2){ y-=1; m+=12; }
+  const A=Math.floor(y/100);
+  const B=2-A+Math.floor(A/4);
+  return Math.floor(365.25*(y+4716)) + Math.floor(30.6001*(m+1)) + day + B - 1524.5 + hour/24;
+}
+
+/* returns object of { bodyKey: longitudeDeg } for the 10 bodies at UT date `dt` */
+function computeLongitudes(dt){
+  const jd = toJulian(dt);
+  const d = jd - 2451543.5;
+
+  const sun = solve(ELEM.sun,d); // sun elements already give geocentric position directly
+  const xs=sun.xh, ys=sun.yh;
+  const lonSun = rev(atan2d(ys,xs));
+
+  const moon = solve(ELEM.moon,d);
+  let lonMoonRaw = rev(atan2d(moon.yh,moon.xh));
+  const Ms = rev(ELEM.sun.M0+ELEM.sun.Md*d);
+  const Mm = rev(ELEM.moon.M0+ELEM.moon.Md*d);
+  const Nm = rev(ELEM.moon.N0+ELEM.moon.Nd*d);
+  const wm = rev(ELEM.moon.w0+ELEM.moon.wd*d);
+  const Ls = rev(sun.w+Ms);
+  const Lm = rev(Nm+wm+Mm);
+  const D  = rev(Lm-Ls);
+  const F  = rev(Lm-Nm);
+  const corr = -1.274*sind(Mm-2*D) + 0.658*sind(2*D) - 0.186*sind(Ms)
+             - 0.059*sind(2*Mm-2*D) - 0.057*sind(Mm-2*D+Ms) + 0.053*sind(Mm+2*D)
+             + 0.046*sind(2*D-Ms) + 0.041*sind(Mm-Ms) - 0.035*sind(D)
+             - 0.031*sind(Mm+Ms) - 0.015*sind(2*F-2*D) + 0.011*sind(Mm-4*D);
+  const lonMoon = rev(lonMoonRaw+corr);
+
+  const out={sun:lonSun, moon:lonMoon};
+  ["mercury","venus","mars","jupiter","saturn","uranus","neptune","pluto"].forEach(k=>{
+    const p=solve(ELEM[k],d);
+    const xg=p.xh+xs, yg=p.yh+ys;
+    out[k]=rev(atan2d(yg,xg));
+  });
+  return out;
+}
+
+/* Ascendant (ecliptic longitude of the eastern horizon) */
+function computeAscendant(dt, lat, lon){
+  const jd = toJulian(dt);
+  const gmst = rev(280.46061837 + 360.98564736629*(jd-2451545));
+  const d = jd - 2451543.5;
+  const eps = 23.4392911 - 3.563e-7*d;
+  const tsl = rev(gmst + lon); // local sidereal time, lon east positive
+  const y = cosd(tsl);
+  const x = -(sind(tsl)*cosd(eps) + tand(lat)*sind(eps));
+  return rev(atan2d(y,x));
+}
+
+/* ---------- zodiac / elements ---------- */
+const SIGNS=["牡羊座","牡牛座","双子座","蟹座","獅子座","乙女座","天秤座","蠍座","射手座","山羊座","水瓶座","魚座"];
+const SIGN_ELEM=["fire","earth","air","water","fire","earth","air","water","fire","earth","air","water"];
+const ELEM_INFO={
+  fire:{label:"火",color:"#C4562E"},
+  earth:{label:"地",color:"#6B7A4F"},
+  air:{label:"風",color:"#8FA6C4"},
+  water:{label:"水",color:"#35708A"}
+};
+const BODY_LABEL={sun:"太陽",moon:"月",asc:"ASC（上昇宮）",mercury:"水星",venus:"金星",mars:"火星",jupiter:"木星",saturn:"土星",uranus:"天王星",neptune:"海王星",pluto:"冥王星"};
+const BODY_ORDER=["sun","moon","asc","mercury","venus","mars","jupiter","saturn","uranus","neptune","pluto"];
+const BODY_WEIGHT={sun:2,moon:2,asc:2,mercury:1,venus:1,mars:1,jupiter:1,saturn:1,uranus:1,neptune:1,pluto:1};
+
+function signOf(lon){
+  const idx=Math.floor(rev(lon)/30);
+  return {name:SIGNS[idx], elem:SIGN_ELEM[idx], deg: rev(lon)%30};
+}
+
+/* ---------- prefecture coordinates (approx, prefectural capital) ---------- */
+const PREFS=[
+["北海道",43.06,141.35],["青森県",40.82,140.74],["岩手県",39.70,141.15],["宮城県",38.27,140.87],
+["秋田県",39.72,140.10],["山形県",38.24,140.36],["福島県",37.75,140.47],["茨城県",36.34,140.45],
+["栃木県",36.57,139.88],["群馬県",36.39,139.06],["埼玉県",35.86,139.65],["千葉県",35.60,140.12],
+["東京都",35.68,139.69],["神奈川県",35.45,139.64],["新潟県",37.90,139.02],["富山県",36.70,137.21],
+["石川県",36.59,136.63],["福井県",36.07,136.22],["山梨県",35.66,138.57],["長野県",36.65,138.18],
+["岐阜県",35.39,136.72],["静岡県",34.98,138.38],["愛知県",35.18,136.91],["三重県",34.73,136.51],
+["滋賀県",35.00,135.87],["京都府",35.02,135.76],["大阪府",34.69,135.50],["兵庫県",34.69,135.18],
+["奈良県",34.69,135.83],["和歌山県",34.23,135.17],["鳥取県",35.50,134.24],["島根県",35.47,133.05],
+["岡山県",34.66,133.93],["広島県",34.40,132.46],["山口県",34.19,131.47],["徳島県",34.07,134.56],
+["香川県",34.34,134.05],["愛媛県",33.84,132.77],["高知県",33.56,133.53],["福岡県",33.61,130.42],
+["佐賀県",33.25,130.30],["長崎県",32.75,129.88],["熊本県",32.79,130.74],["大分県",33.24,131.61],
+["宮崎県",31.91,131.42],["鹿児島県",31.56,130.56],["沖縄県",26.21,127.68]
+];
+
+/* ---------- UI wiring ---------- */
+function setChoiceGroup(groupId,onChange){
+  const group=document.getElementById(groupId);
+  group.querySelectorAll(".choice").forEach(c=>{
+    c.addEventListener("click",()=>{
+      group.querySelectorAll(".choice").forEach(x=>x.classList.remove("active"));
+      c.classList.add("active");
+      const val=c.querySelector("input").value;
+      onChange(val);
+    });
+  });
+}
+setChoiceGroup("timeChoice",val=>{
+  document.getElementById("timeKnownPanel").classList.toggle("show",val==="known");
+});
+setChoiceGroup("placeChoice",val=>{
+  document.getElementById("jpPanel").classList.toggle("show",val==="jp");
+  document.getElementById("overseasPanel").classList.toggle("show",val==="overseas");
+  document.getElementById("placeHint").style.display = (val==="unknown")?"block":"none";
+});
+
+/* populate prefecture select */
+const prefSel=document.getElementById("prefSelect");
+PREFS.forEach(p=>{
+  const opt=document.createElement("option");
+  opt.value=`${p[1]},${p[2]}`;
+  opt.textContent=p[0];
+  if(p[0]==="東京都") opt.selected=true;
+  prefSel.appendChild(opt);
+});
+
+/* populate UTC offset select */
+const OFFSETS=[-12,-11,-10,-9,-8,-7,-6,-5,-4,-3.5,-3,-2,-1,0,1,2,3,3.5,4,4.5,5,5.5,5.75,6,6.5,7,8,9,9.5,10,10.5,11,12,12.75,13,14];
+const offsetSel=document.getElementById("utcOffset");
+OFFSETS.forEach(o=>{
+  const opt=document.createElement("option");
+  opt.value=o;
+  const sign=o>=0?"+":"";
+  const h=Math.trunc(o), min=Math.round((Math.abs(o)-Math.abs(h))*60);
+  opt.textContent=`UTC${sign}${o}` + (min? ` (${sign}${h}:${String(min).padStart(2,"0")})`:"");
+  if(o===9) opt.selected=true;
+  offsetSel.appendChild(opt);
+});
+
+/* ---------- run ---------- */
+document.getElementById("runBtn").addEventListener("click",()=>{
+  const dateVal=document.getElementById("bdate").value;
+  if(!dateVal){ alert("生年月日を入力してください。"); return; }
+  const [Y,M,D]=dateVal.split("-").map(Number);
+
+  const timeMode=document.querySelector('input[name="timeMode"]:checked').value;
+  const placeMode=document.querySelector('input[name="placeMode"]:checked').value;
+
+  let offset=9, lat=null, lon=null;
+  if(placeMode==="jp"){
+    const [la,lo]=prefSel.value.split(",").map(Number);
+    lat=la; lon=lo; offset=9;
+  } else if(placeMode==="overseas"){
+    offset=parseFloat(offsetSel.value);
+    const laVal=document.getElementById("latInput").value;
+    const loVal=document.getElementById("lonInput").value;
+    if(laVal!=="" && loVal!==""){ lat=parseFloat(laVal); lon=parseFloat(loVal); }
+  } else {
+    offset=9; lat=null; lon=null;
+  }
+
+  let hourLocal=12;
+  if(timeMode==="known"){
+    const tVal=document.getElementById("btime").value || "12:00";
+    const [hh,mm]=tVal.split(":").map(Number);
+    hourLocal=hh+mm/60;
+  }
+
+  function longAt(hLocal){
+    const hourUT=hLocal-offset;
+    return computeLongitudes({y:Y,m:M,d:D,hour:hourUT});
+  }
+
+  const main=longAt(hourLocal);
+
+  const canAsc = (timeMode==="known") && (lat!==null) && (lon!==null) && !isNaN(lat) && !isNaN(lon);
+  if(canAsc){
+    const hourUT=hourLocal-offset;
+    main.asc = computeAscendant({y:Y,m:M,d:D,hour:hourUT}, lat, lon);
+  }
+
+  let warnHTML="";
+  if(timeMode==="unknown"){
+    const early=longAt(0);
+    const late=longAt(23.9833);
+    const sEarly=signOf(early.moon).name, sLate=signOf(late.moon).name;
+    if(sEarly!==sLate){
+      warnHTML+=`<div class="warn">⚠️ 出生時刻が不明のため、月がその日のうちに ${sEarly} → ${sLate} と星座を移動しています。正午の時点では「${signOf(main.moon).name}」として計算していますが、実際の時刻によって異なる可能性があります。</div>`;
+    } else {
+      warnHTML+=`<div class="warn">出生時刻は正午と仮定して計算しています（月の星座はその日を通して変わりません）。</div>`;
+    }
+    warnHTML+=`<div class="warn">出生時刻が不明のため、ASC（上昇宮）は計算していません。</div>`;
+  } else if(!canAsc){
+    warnHTML+=`<div class="warn">出生地の座標が不明のため、ASC（上昇宮）は計算していません。</div>`;
+  }
+
+  const bodies = canAsc ? BODY_ORDER : BODY_ORDER.filter(k=>k!=="asc");
+  const rows=bodies.map(k=>{
+    const s=signOf(main[k]);
+    return {key:k,label:BODY_LABEL[k],sign:s.name,elem:s.elem,deg:s.deg,weight:BODY_WEIGHT[k]};
+  });
+
+  const counts={fire:0,earth:0,air:0,water:0};
+  let totalWeight=0;
+  rows.forEach(r=>{ counts[r.elem]+=r.weight; totalWeight+=r.weight; });
+
+  renderResult(rows,counts,totalWeight,warnHTML,{Y,M,D,timeMode,placeMode,hourLocal,offset,canAsc});
+});
+
+function renderResult(rows,counts,totalWeight,warnHTML,meta){
+  document.getElementById("warnBox").innerHTML=warnHTML;
+
+  const metaTxt=`${meta.Y}/${meta.M}/${meta.D}` +
+    (meta.timeMode==="known" ? ` ${String(Math.floor(meta.hourLocal)).padStart(2,"0")}:${String(Math.round((meta.hourLocal%1)*60)).padStart(2,"0")}` : " 時刻不明") +
+    ` / UTC${meta.offset>=0?"+":""}${meta.offset}` + (meta.canAsc?" / ASC計算あり":"");
+  document.getElementById("calcMeta").textContent=metaTxt;
+
+  /* donut chart (weighted) */
+  const order=["fire","earth","air","water"];
+  let cum=0;
+  const r=54,cx=64,cy=64;
+  let paths="";
+  order.forEach(k=>{
+    const frac=counts[k]/totalWeight;
+    if(frac>0){
+      const a0=cum*360, a1=(cum+frac)*360;
+      paths+=donutSlice(cx,cy,r,a0,a1,ELEM_INFO[k].color);
+      cum+=frac;
+    }
+  });
+  document.getElementById("donut").innerHTML = paths + `<circle cx="${cx}" cy="${cy}" r="30" fill="#14172B"/>`;
+
+  const legend=document.getElementById("legend");
+  legend.innerHTML = order.map(k=>{
+    const pct=Math.round(counts[k]/totalWeight*100);
+    return `<div class="legend-item">
+      <span class="legend-swatch" style="background:${ELEM_INFO[k].color}"></span>
+      <span class="legend-name">${ELEM_INFO[k].label}</span>
+      <span class="legend-count">${counts[k]}点 ・ ${pct}%</span>
+    </div>`;
+  }).join("");
+
+  /* verdict */
+  const maxCount=Math.max(...order.map(k=>counts[k]));
+  const top=order.filter(k=>counts[k]===maxCount);
+  let verdictText;
+  if(maxCount===0){
+    verdictText="診断結果を取得できませんでした。";
+  } else if(top.length===1){
+    verdictText=`太陽・月・ASCを2点、その他の天体を1点として集計したところ、<b>${ELEM_INFO[top[0]].label}の元素が${maxCount}点</b>と最も多く、<b>${ELEM_INFO[top[0]].label}のエレメント</b>が優勢な傾向です。`;
+  } else {
+    const names=top.map(k=>ELEM_INFO[k].label).join("・");
+    verdictText=`太陽・月・ASCを2点、その他の天体を1点として集計したところ、<b>${names}の元素が${maxCount}点ずつ</b>で並び、どちらも同じくらい強く出ています。`;
+  }
+  document.getElementById("verdict").innerHTML=verdictText;
+
+  /* table */
+  document.getElementById("bodyTable").innerHTML = rows.map(r=>`
+    <tr class="${r.weight===2?'big3':''}">
+      <td class="body-name">${r.label}${r.weight===2?'<span class="weight-badge">×2</span>':''}</td>
+      <td class="sign-tag">${r.sign}</td>
+      <td class="deg">${r.deg.toFixed(1)}°</td>
+      <td style="text-align:right;"><span class="elem-badge" style="background:${ELEM_INFO[r.elem].color}">${ELEM_INFO[r.elem].label}</span></td>
+    </tr>
+  `).join("");
+
+  document.getElementById("result").style.display="block";
+  document.getElementById("result").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function donutSlice(cx,cy,r,a0,a1,color){
+  const toXY=a=>{
+    const rad=(a-90)*Math.PI/180;
+    return [cx+r*Math.cos(rad), cy+r*Math.sin(rad)];
+  };
+  const [x0,y0]=toXY(a0);
+  const [x1,y1]=toXY(a1);
+  const large = (a1-a0)>180 ? 1:0;
+  return `<path d="M${cx},${cy} L${x0.toFixed(2)},${y0.toFixed(2)} A${r},${r} 0 ${large} 1 ${x1.toFixed(2)},${y1.toFixed(2)} Z" fill="${color}"/>`;
+}
+</script>
+</body>
+</html>
